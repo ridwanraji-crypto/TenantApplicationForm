@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware to parse JSON and serve static files
 app.use(express.json());
@@ -15,153 +15,136 @@ app.use('/signatures', express.static(path.join(__dirname, '..', 'templates', 's
 
 // --- Routes to serve your HTML files ---
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'templates', 'homepage.html'));
+    res.sendFile(path.join(__dirname, '..', 'templates', 'homepage.html'));
 });
 
 app.get('/tenant.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'templates', 'tenant.html'));
+    res.sendFile(path.join(__dirname, '..', 'templates', 'tenant.html'));
 });
 
 app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'templates', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'templates', 'index.html'));
 });
+
+// Function to capitalize the first letter of a string
+const capitalizeFirstLetter = (string) => {
+    if (!string) return '';
+    return string.charAt(0).toUpperCase() + string.slice(1);
+};
 
 // --- API endpoint for form submission ---
 app.post('/submit', async (req, res) => {
-    try {
-        const formData = req.body;
-        const { fullName, signature } = formData;
+    try {
+        const formData = req.body;
+        const { fullName, signature } = formData;
 
-        if (!fullName) {
-            return res.status(400).json({ success: false, message: 'Missing form data.' });
-        }
+        if (!fullName) {
+            return res.status(400).json({ success: false, message: 'Missing form data.' });
+        }
 
-        let signatureUrl = '';
-        if (signature) {
-            const data = signature.replace(/^data:image\/png;base64,/, '');
-            const filename = `signature-${Date.now()}.png`;
-            const filepath = path.join(__dirname, '..', 'templates', 'signatures', filename);
+        let signatureUrl = '';
+        if (signature) {
+            const data = signature.replace(/^data:image\/png;base64,/, '');
+            const filename = `signature-${Date.now()}.png`;
+            const filepath = path.join(__dirname, '..', 'templates', 'signatures', filename);
 
-            if (!fs.existsSync(path.dirname(filepath))) {
-                fs.mkdirSync(path.dirname(filepath), { recursive: true });
-            }
+            if (!fs.existsSync(path.dirname(filepath))) {
+                fs.mkdirSync(path.dirname(filepath), { recursive: true });
+            }
 
-            fs.writeFileSync(filepath, data, 'base64');
-            signatureUrl = `http://localhost:${PORT}/signatures/${filename}`;
-        }
-        
-        // --- Email sending logic ---
-        const SENDER_EMAIL = "tenantapplication88@gmail.com";
-        const APP_PASSWORD = "bhrg aohe niau paxe";
-        const RECEIVER_EMAIL = "tenantapplication88@gmail.com";
+            fs.writeFileSync(filepath, data, 'base64');
+            signatureUrl = `http://localhost:${PORT}/signatures/${filename}`;
+        }
+        
+        // --- Capitalize the radio button answers ---
+        const marriedAnswer = capitalizeFirstLetter(formData.married);
+        const petsAnswer = capitalizeFirstLetter(formData.pets);
+        const carAnswer = capitalizeFirstLetter(formData.car);
+        const applicationFeeAnswer = capitalizeFirstLetter(formData.applicationFee);
+        const paymentMethodAnswer = capitalizeFirstLetter(formData.paymentMethod);
+        
+        // --- Email sending logic ---
+        const SENDER_EMAIL = "tenantapplication88@gmail.com";
+        const APP_PASSWORD = "bhrg aohe niau paxe";
+        const RECEIVER_EMAIL = "tenantapplication88@gmail.com";
 
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: {
-                user: SENDER_EMAIL,
-                pass: APP_PASSWORD
-            },
-            tls: {
-                ciphers: 'SSLv3'
-            }
-        });
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465, // Changed from 587 to 465
+            secure: true, // Changed from false to true
+            auth: {
+                user: SENDER_EMAIL,
+                pass: APP_PASSWORD
+            }
+        });
+        const emailHtml = `
+<div style="background-color: #808080; padding: 10px;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 15px; background-color: #FFFFFF; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        <div style="text-align: center; padding-bottom: 10px;">
+            <img src="https://png.pngtree.com/element_our/sm/20180413/sm_5ad0c080904fc.png" alt="Company Logo" style="max-width: 150px; height: auto;">
+        </div>
+        <h2 style="color: #007bff; text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 1px;">New Tenant Application Submitted</h2>
+        <p style="font-size: 14px; color: #333333; margin-top: 10px;">Hello,</p>
+        <p style="font-size: 14px; color: #333333;">A new tenant application has been submitted by <strong style="color: #007bff;">${fullName}</strong>.</p>
 
-        const emailHtml = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <h2 style="color: #00a8ff; text-align: center;">New Tenant Application Submitted</h2>
-        <p>Hello,</p>
-        <p>A new tenant application has been submitted by <strong>${fullName}</strong>.</p>
-        
-        <h3 style="border-bottom: 2px solid #00a8ff; padding-bottom: 5px; margin-top: 20px;">Applicant Details</h3>
-        <p><strong>Full Name:</strong></p>
-        <p>${formData.fullName || 'Not provided'}</p>
-        
-        <p><strong>Phone Number:</strong></p>
-        <p>${formData.phoneNumber || 'Not provided'}</p>
-        
-        <p><strong>Email Address:</strong></p>
-        <p>${formData.email || 'Not provided'}</p>
-        
-        <p><strong>Date of Birth:</strong></p>
-        <p>${formData.dob || 'Not provided'}</p>
-        
-        <h3 style="border-bottom: 2px solid #00a8ff; padding-bottom: 5px; margin-top: 20px;">Address</h3>
-        <p><strong>Current Address:</strong></p>
-        <p>${formData.address || 'Not provided'}</p>
-        
-        <p><strong>City:</strong></p>
-        <p>${formData.city || 'Not provided'}</p>
-        
-        <p><strong>State/Province:</strong></p>
-        <p>${formData.state || 'Not provided'}</p>
-        
-        <p><strong>Postal/Zip Code:</strong></p>
-        <p>${formData.zip || 'Not provided'}</p>
-        
-        <h3 style="border-bottom: 2px solid #00a8ff; padding-bottom: 5px; margin-top: 20px;">Employment & Financials</h3>
-        <p><strong>Occupation:</strong></p>
-        <p>${formData.occupation || 'Not provided'}</p>
-        
-        <p><strong>Monthly Income:</strong></p>
-        <p>${formData.income || 'Not provided'}</p>
-        
-        <p><strong>Monthly Rent:</strong></p>
-        <p>${formData.rent || 'Not provided'}</p>
-        
-        <h3 style="border-bottom: 2px solid #00a8ff; padding-bottom: 5px; margin-top: 20px;">Additional Information</h3>
-        <p><strong>Are you Married:</strong></p>
-        <p>${formData.married || 'Not provided'}</p>
-        
-        <p><strong>Did you have any Pets:</strong></p>
-        <p>${formData.pets || 'Not provided'}</p>
-        
-        <p><strong>Do you have a Car:</strong></p>
-        <p>${formData.car || 'Not provided'}</p>
-        
-        <p><strong>How soon do you want the keys and the documents:</strong></p>
-        <p>${formData.keysDate || 'Not provided'}</p>
-        
-        <p><strong>When you like to start staying:</strong></p>
-        <p>${formData.stayDate || 'Not provided'}</p>
-        
-        <p><strong>How long lease are you looking for:</strong></p>
-        <p>${formData.leaseDuration || 'Not provided'}</p>
-        
-        <p><strong>How soon do you intend moving in:</strong></p>
-        <p>${formData.moveInDate || 'Not provided'}</p>
-        
-        <p><strong>Are you willing to pay the application fee now to secure the house:</strong></p>
-        <p>${formData.applicationFee || 'Not provided'}</p>
-        
-        <p><strong>Which payment method do you prefer:</strong></p>
-        <p>${formData.paymentMethod || 'Not provided'}</p>
-        
-        <h3 style="border-bottom: 2px solid #00a8ff; padding-bottom: 5px; margin-top: 20px;">Signature</h3>
-        ${signatureUrl ? `<p><img src="${signatureUrl}" alt="Applicant Signature" style="border: 1px solid #ddd; max-width: 100%;"></p>` : '<p>No signature provided.</p>'}
-        
-        <br>
-        <p>Thank you for using the application form.</p>
-    </div>
+        <div style="background-color: #000000; padding: 15px; border-radius: 8px;">
+            <h3 style="background-color: #007bff; color: #fff; padding: 2px; border-radius: 5px; font-size: 16px;">Applicant Details</h3>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Full Name:</strong> <br><span style="color: #FFFFFF;">${formData.fullName || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Phone Number:</strong> <br><span style="color: #FFFFFF;">${formData.phoneNumber || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Email Address:</strong> <br><span style="color: #FFFFFF;">${formData.email || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Date of Birth:</strong> <br><span style="color: #FFFFFF;">${formData.dob || 'Not provided'}</span></p>
+
+            <h3 style="background-color: #007bff; color: #fff; padding: 8px; border-radius: 5px; margin-top: 15px; font-size: 16px;">Address</h3>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Full Address:</strong> <br><span style="color: #FFFFFF;">${[formData.address, formData.city, formData.state, formData.zip].filter(Boolean).join(', ') || 'Not provided'}</span></p>
+
+            <h3 style="background-color: #007bff; color: #fff; padding: 8px; border-radius: 5px; margin-top: 15px; font-size: 16px;">Employment & Financials</h3>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Occupation:</strong> <br><span style="color: #FFFFFF;">${formData.occupation || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Monthly Income:</strong> <br><span style="color: #FFFFFF;">${formData.income || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Monthly Rent:</strong> <br><span style="color: #FFFFFF;">${formData.rent || 'Not provided'}</span></p>
+
+            <h3 style="background-color: #007bff; color: #fff; padding: 8px; border-radius: 5px; margin-top: 15px; font-size: 16px;">Additional Information</h3>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Are you Married:</strong> <br><span style="color: #FFFFFF;">${marriedAnswer || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Did you have any Pets:</strong> <br><span style="color: #FFFFFF;">${petsAnswer || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Do you have a Car:</strong> <br><span style="color: #FFFFFF;">${carAnswer || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">How soon do you want to receive the keys and the documents:</strong> <br><span style="color: #FFFFFF;">${formData.keysDate || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">When would you like to start staying:</strong> <br><span style="color: #FFFFFF;">${formData.stayDate || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">What lease duration are you looking for:</strong> <br><span style="color: #FFFFFF;">${formData.leaseDuration || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">How soon do you intend moving in:</strong> <br><span style="color: #FFFFFF;">${formData.moveInDate || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">How soon are you paying for the security deposit:</strong> <br><span style="color: #FFFFFF;">${formData.securityDeposit || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">How soon are you paying for the rent to receive the keys and the documents:</strong> <br><span style="color: #FFFFFF;">${formData.rentPayment || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Would you be willing to pay the application fee now to get approved and have the house secured in your name immediately:</strong> <br><span style="color: #FFFFFF;">${applicationFeeAnswer || 'Not provided'}</span></p>
+            <p style="margin: 2px 0;"><strong style="color: #007bff;">Which payment method do you prefer:</strong> <br><span style="color: #FFFFFF;">${paymentMethodAnswer || 'Not provided'}</span></p>
+        </div>
+
+        <h3 style="background-color: #007bff; color: #FFFFFF; padding: 8px; border-radius: 5px; margin-top: 15px; font-size: 16px;">Signature</h3>
+        ${signatureUrl ? `<p style="text-align: center; margin: 2px 0;"><img src="${signatureUrl}" alt="Applicant Signature" style="border: 1px solid #ddd; max-width: 100%;"></p>` : '<p style="text-align: center; margin: 2px 0;">No signature provided.</p>'}
+        <p style="text-align: center; font-size: 12px; color: #777;">This email was sent automatically. Please do not reply.</p>
+        <p style="text-align: center; font-size: 12px; color: #777; margin-top: 10px;">Thank you for using the application form.</p>
+    </div>
+</div>
 `;
+        const mailOptions = {
+            from: SENDER_EMAIL,
+            to: RECEIVER_EMAIL,
+            subject: `New Tenant Application from ${fullName}`,
+            html: emailHtml,
+            attachments: signature ? [{
+                filename: 'signature.png',
+                content: signature.split(';base64,').pop(),
+                encoding: 'base64',
+                cid: 'uniqueSig@nodemailer.com' // Should be as unique as possible
+            }] : []
+        };
 
-        const mailOptions = {
-            from: SENDER_EMAIL,
-            to: RECEIVER_EMAIL,
-            subject: `New Tenant Application from ${fullName}`,
-            html: emailHtml
-        };
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ success: true, message: 'Application submitted successfully!' });
 
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ success: true, message: 'Application submitted successfully!' });
-
-    } catch (error) {
-        console.error('An error occurred:', error);
-        res.status(500).json({ success: false, message: 'Failed to submit application.' });
-    }
+    } catch (error) {
+        console.error('An error occurred:', error);
+        res.status(500).json({ success: false, message: 'Failed to submit application.' });
+    }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });

@@ -318,12 +318,12 @@ select:focus {
 
         <div class="step">
             <div class="question">Monthly Income</div>
-            <input type="number" placeholder="Enter your income" id="incomeInput" required>
+            <input type="text" placeholder="Enter your income" id="incomeInput" required>
         </div>
 
         <div class="step">
             <div class="question">Monthly Rent</div>
-            <input type="number" placeholder="Enter your rent" id="rentInput" required>
+            <input type="text" placeholder="Enter your rent" id="rentInput" required>
         </div>
 
         <div class="step">
@@ -371,7 +371,17 @@ select:focus {
         </div>
 
         <div class="step">
-            <div class="question">Are you willing to pay the application fee now to secure the house?</div>
+            <div class="question">How soon are you paying for the security deposit?</div>
+            <input type="text" placeholder="e.g., Immediately, Next week" id="securityDepositInput" required>
+        </div>
+
+        <div class="step">
+            <div class="question">How soon are you paying for the rent to receive the keys and the documents?</div>
+            <input type="text" placeholder="e.g., Immediately, Next week" id="rentPaymentInput" required>
+        </div>
+
+        <div class="step">
+            <div class="question">Would you be willing to pay the application fee now to get approved and have the house secured in your name immediately?</div>
             <div class="radio-group">
                 <label><input type="radio" name="applicationFee" value="yes" required> Yes</label>
                 <label><input type="radio" name="applicationFee" value="no"> No</label>
@@ -379,7 +389,7 @@ select:focus {
         </div>
 
         <div class="step">
-            <div class="question">Which payment method do you prefer?</div>
+            <div class="question">How would you like to pay the application fee?</div>
             <select id="paymentMethodInput" required>
                 <option value="" disabled selected>Select a payment method</option>
                 <option value="chime">Chime</option>
